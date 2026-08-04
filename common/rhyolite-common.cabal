@@ -6,7 +6,7 @@ author:        Obsidian Systems
 maintainer:    maintainer@obsidian.systems
 stability:     Experimental
 build-type:    Simple
-cabal-version: >=1.2
+cabal-version: 2.0
 synopsis:      Common abstractions and datastructures.
 description:
   This package defines some common abstractions and datatypes used by
