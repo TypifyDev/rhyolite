@@ -24,7 +24,6 @@ library
     , monoidal-containers
     , patch
     , postgresql-simple
-    , reflex
     , resource-pool
     , rhyolite-common
     , rhyolite-notify-listen

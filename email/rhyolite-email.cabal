@@ -33,8 +33,6 @@ library
     , mtl
     , network
     , jenga-route
-    , reflex
-    , reflex-dom-core
     , rhyolite-common
     , signed-data
     , smtp-mail

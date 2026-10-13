@@ -246,7 +246,7 @@ widgetMail cfg recipients sub plainText bodyWidget = do
         , _widgetEmailAddress = email
         , _widgetEmailBaseURL = baseUrl
         , _widgetEmailRouteEncoder = routeEncoder } = cfg
-    renderRouteForEmail = (baseUrl <>) . renderFrontendRoute routeEncoder
+    renderRouteForEmail = (baseUrl <>) . renderObeliskFrontendRoute routeEncoder
     runEmailWidget = fmap snd . renderStatic . flip runRouteToUrlT renderRouteForEmail . runSetRouteT
     runEmailPlaintext = runIdentity . flip runRouteToUrlT renderRouteForEmail
   t <- liftIO $ getCurrentTime

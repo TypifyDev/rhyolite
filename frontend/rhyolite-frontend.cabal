@@ -40,8 +40,6 @@ library
     , jenga-route
     , primitive
     , ref-tf
-    , reflex
-    , reflex-dom-core
     , rhyolite-common
     , some
     , text

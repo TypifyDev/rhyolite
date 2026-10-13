@@ -36,7 +36,6 @@ library
     , mtl
     , network-uri
     , patch
-    , reflex
     , semialign
     , semimap
     , some

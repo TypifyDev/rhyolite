@@ -31,8 +31,6 @@ library
     , jenga-route
     , primitive
     , ref-tf
-    , reflex
-    , reflex-dom-core
     , text
     , transformers
     , validation

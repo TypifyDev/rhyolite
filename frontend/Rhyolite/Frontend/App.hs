@@ -315,7 +315,7 @@ runJengaRhyoliteWidget toWire configRoute enc listenRoute child = do
         Nothing -> error $ T.unpack $ "route config missing: " <> configRoute
         Just Nothing -> error $ T.unpack $ "malformed confing route: " <> configRoute
         Just (Just r) -> r
-  let wsUrl = (T.pack $ show $ websocketUri route) <> (renderBackendRoute enc listenRoute)
+  let wsUrl = (T.pack $ show $ websocketUri route) <> (renderObeliskBackendRoute enc listenRoute)
   lift $ runRhyoliteWidget toWire wsUrl $ flip runRoutedT obR $ child
 
 -- | Runs a rhyolite frontend widget that opens a websocket connection and can
