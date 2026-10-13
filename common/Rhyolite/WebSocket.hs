@@ -14,10 +14,10 @@ program that pretends to be a user of your app (load-testing comes to mind).
 module Rhyolite.WebSocket where
 
 import Data.Aeson
-import Data.Semigroup ((<>))
+-- import Data.Semigroup ((<>)) -- unused per -Wunused-imports
 import Data.Some
 import Data.Text (Text)
-import Data.Typeable
+-- import Data.Typeable -- unused per -Wunused-imports
 import GHC.Generics
 import Network.URI (URI(..))
 import Reflex.Query.Class
@@ -36,7 +36,7 @@ websocketUri uri = uri
 -- declarations or API requests
 data WebSocketRequest q r = WebSocketRequest_ViewSelector q
                           | WebSocketRequest_Api (TaggedRequest r)
-  deriving (Typeable, Generic)
+  deriving (Generic)
 
 instance (FromJSON q, FromJSON (Some r)) => FromJSON (WebSocketRequest q r)
 instance (ToJSON q, ToJSON (Some r)) => ToJSON (WebSocketRequest q r)
@@ -45,21 +45,21 @@ instance (ToJSON q, ToJSON (Some r)) => ToJSON (WebSocketRequest q r)
 data WebSocketResponse q = WebSocketResponse_View (QueryResult q)
                          | WebSocketResponse_Api TaggedResponse
                          | WebSocketResponse_Version Text
-  deriving (Typeable, Generic)
+  deriving (Generic)
 
 instance FromJSON (QueryResult q) => FromJSON (WebSocketResponse q)
 instance ToJSON (QueryResult q) => ToJSON (WebSocketResponse q)
 
 -- | A request tagged with an identifier
 data TaggedRequest r = TaggedRequest Int (Some r)
-  deriving (Typeable, Generic)
+  deriving (Generic)
 
 instance FromJSON (Some r) => FromJSON (TaggedRequest r)
 instance ToJSON (Some r) => ToJSON (TaggedRequest r)
 
 -- | A response tagged with an identifier matching the one in the 'TaggedRequest'. The identifier is the first argument.
 data TaggedResponse = TaggedResponse Int Value
-  deriving (Typeable, Generic)
+  deriving (Generic)
 
 instance FromJSON TaggedResponse
 instance ToJSON TaggedResponse

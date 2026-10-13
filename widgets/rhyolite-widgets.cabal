@@ -27,8 +27,8 @@ library
     , jsaddle
     , lens
     , mtl
-    , obelisk-executable-config-lookup
-    , obelisk-route
+    , jenga-executable-config-lookup
+    , jenga-route
     , primitive
     , ref-tf
     , reflex

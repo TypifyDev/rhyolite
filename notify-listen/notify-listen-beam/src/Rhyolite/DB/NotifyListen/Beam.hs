@@ -1,9 +1,12 @@
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE KindSignatures #-}
 {-|
 Description: Notifications in beam
 
 Notifications about database changes in beam
 -}
 {-# Language ConstraintKinds #-}
+{-# Language DataKinds #-}
 {-# Language DeriveGeneric #-}
 {-# Language FlexibleContexts #-}
 {-# Language FunctionalDependencies #-}
@@ -31,12 +34,14 @@ module Rhyolite.DB.NotifyListen.Beam
   ) where
 
 import Data.Aeson
+import Data.Kind (Type)
 import Data.Constraint.Extras
 import Data.Constraint.Forall
 import Data.Dependent.Sum
 import Data.Functor.Identity
 import Data.These
 import Database.Beam
+import Database.Beam.Query.Shape (Shape (..))
 import Database.Beam.Backend.SQL
 import Database.Beam.Backend.SQL.BeamExtensions
 import Database.Beam.Postgres
@@ -88,13 +93,13 @@ insertAndNotify
      )
   => DatabaseEntity be db (TableEntity t)
   -- ^ The table to insert into
-  -> (forall s. t (QExpr be s))
+  -> (forall (s :: Type). t (QExpr be s))
   -- ^ The value to insert
   -> m (Maybe (PrimaryKey t Identity))
   -- ^ A primary key is returned and notified if the insert was successful.
 insertAndNotify tbl g = do
   let toNotify = map $ \x -> notification tbl :=> Identity x
-  rs <- runPgInsertReturningListWithNotify @be toNotify $ flip Pg.returning primaryKey $ insert tbl $ insertExpressions [g]
+  rs <- runPgInsertReturningListWithNotify @be toNotify $ flip (Pg.returning @_ @'STable) primaryKey $ insert tbl $ insertExpressions [g]
   case rs of
     [r] -> pure $ Just r
     [] -> pure Nothing
@@ -114,14 +119,14 @@ updateAndNotify
   -- ^ The table to update
   -> PrimaryKey t Identity
   -- ^ The row to update
-  -> (forall s. t (QField s) -> QAssignment be s)
+  -> (forall (s :: Type). t (QField s) -> QAssignment be s)
   -- ^ The update to be performed
   -- (e.g., @(\c -> addressCountry (customerAddress c) <-. val_ (Just "USA"))@)
   -> m (Maybe (PrimaryKey t Identity))
   -- ^ A primary key is returned and notified if the update was successful.
 updateAndNotify tbl k g = do
   let toNotify = map $ \x -> notification tbl :=> Identity x
-  rs <- runPgUpdateReturningListWithNotify @be toNotify $ flip Pg.returning primaryKey $
+  rs <- runPgUpdateReturningListWithNotify @be toNotify $ flip (Pg.returning @_ @'STable) primaryKey $
     update tbl g (\t -> primaryKey t ==. val_ k)
   case rs of
     [r] -> pure $ Just r
@@ -146,7 +151,7 @@ deleteAndNotify
   -- ^ A primary key is returned and notified if the deletion was succesful
 deleteAndNotify tbl k = do
   let toNotify = map $ \x -> notification tbl :=> Identity x
-  rs <- runPgDeleteReturningListWithNotify @be toNotify $ flip Pg.returning primaryKey $
+  rs <- runPgDeleteReturningListWithNotify @be toNotify $ flip (Pg.returning @_ @'STable) primaryKey $
     delete tbl (\t -> primaryKey t ==. val_ k)
   case rs of
     [r] -> pure $ Just r
@@ -193,7 +198,7 @@ insertAndNotifyChange
      )
   => DatabaseEntity be db (TableEntity t)
   -- ^ The table into which the new row will be inserted
-  -> (forall s. t (QExpr be s))
+  -> (forall (s :: Type). t (QExpr be s))
   -- ^ The value to be inserted
   -> m (Maybe (PrimaryKey t Identity))
   -- ^ The primary key of the new row, if the insert was successful
@@ -225,7 +230,7 @@ updateAndNotifyChange
   -- ^ The table being updated
   -> PrimaryKey t Identity
   -- ^ The primary key of the row to update
-  -> (forall s. t (QField s) -> QAssignment be s)
+  -> (forall (s :: Type). t (QField s) -> QAssignment be s)
   -- ^ The actual update to perform
   -- (e.g., @(\c -> addressCountry (customerAddress c) <-. val_ (Just "USA"))@)
   -> m (Maybe (PrimaryKey t Identity))
@@ -287,7 +292,7 @@ selectByKey
   -> PrimaryKey t Identity
   -> m (Maybe (t Identity))
 selectByKey tbl k = runSelectReturningOne $
-    select $ filter_ (\t -> primaryKey t ==. val_ k) (all_ tbl)
+    select @'STable $ filter_ (\t -> primaryKey t ==. val_ k) (all_ tbl)
 
 -- | Execute a 'PgInsertReturning' statement and emit notifications
 -- based on the returned results.

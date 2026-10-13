@@ -1,7 +1,9 @@
+{-# LANGUAGE TypeOperators #-}
 {-| Description: ErrorV implementation
 -}
 {-# Language ConstraintKinds #-}
 {-# Language DeriveGeneric #-}
+{-# Language FlexibleContexts #-}
 {-# Language FlexibleInstances #-}
 {-# Language GADTs #-}
 {-# Language GeneralizedNewtypeDeriving #-}
@@ -15,6 +17,7 @@
 module Rhyolite.Vessel.ErrorV.Internal where
 
 import Data.Aeson
+import Data.Kind (Type)
 import Data.Aeson.GADT.TH
 import Data.Constraint
 import Data.Constraint.Extras

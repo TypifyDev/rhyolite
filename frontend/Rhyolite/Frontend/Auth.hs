@@ -2,6 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Rhyolite.Frontend.Auth where
 
@@ -15,6 +18,12 @@ import Rhyolite.Api
 import Rhyolite.Frontend.App
 import Rhyolite.Vessel.AuthMapV
 import Rhyolite.Vessel.AuthenticatedV
+
+import           Data.Functor.Identity (Identity)
+import           Effectful (Eff, (:>))
+import qualified Reflex.Host.HeadlessEffectful as EFQ
+import qualified Reflex.Host.HeadlessEffectful as EFRQ
+import           Rhyolite.Frontend.Effect.WidgetRunner (mapAuthE)
 import Rhyolite.Vessel.Types
 
 -- | The type for app widgets at the top level of the app.
@@ -66,3 +75,29 @@ authenticatedWidget
   -> AuthErrorWidget token publicApi privateApi publicV privateV personalV t m a
   -> FullWidget token publicApi privateApi publicV privateV personalV t m a
 authenticatedWidget token = mapAuth token (mapAuthenticatedV id (authMapQueryMorphism token) (authMapQueryMorphism token)) . unRhyoliteWidget
+
+-- ============================================================================
+-- Effectful port of authenticatedWidget (both surfaces coexist).
+-- ============================================================================
+
+authenticatedWidgetE
+  :: forall t token publicApi privateApi publicV privateV personalV es a.
+     ( Reflex t
+     , HasRhyoliteAuth token publicV privateV personalV
+     , EFQ.Query t
+         (FullV token publicV privateV personalV (Const SelectedCount)) :> es
+     , EFRQ.Requester t
+         (ApiRequest token publicApi privateApi) Identity :> es
+     )
+  => token
+  -> Eff ( EFQ.Query t
+             (FullAuthErrorV publicV privateV personalV (Const SelectedCount))
+         ': EFRQ.Requester t
+             (ApiRequest () publicApi privateApi) Identity
+         ': es ) a
+  -> Eff es a
+authenticatedWidgetE token =
+  mapAuthE token
+    (mapAuthenticatedV id
+       (authMapQueryMorphism token)
+       (authMapQueryMorphism token))

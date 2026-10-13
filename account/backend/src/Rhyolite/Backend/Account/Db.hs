@@ -5,10 +5,12 @@ Description:
   This module does not handle notifications. See
   Rhyolite.Backend.Account.Notify for that
 -}
+{-# Language DataKinds #-}
 {-# Language DeriveGeneric #-}
 {-# Language FlexibleContexts #-}
 {-# Language MonoLocalBinds #-}
 {-# Language OverloadedStrings #-}
+{-# Language TypeApplications #-}
 module Rhyolite.Backend.Account.Db
   ( createAccount
   , login
@@ -23,6 +25,7 @@ module Rhyolite.Backend.Account.Db
   ) where
 
 import Control.Monad (guard)
+import Database.Beam.Query.Shape (Shape (..))
 import Control.Monad.Trans.Maybe
 import Crypto.PasswordStore
 import Data.ByteString
@@ -51,7 +54,7 @@ createAccount
   -> Pg (Either Text (PrimaryKey Account Identity))
 createAccount accountTable email pass = do
   hash <- makePasswordHash pass
-  accountIds <- runPgInsertReturningList $ flip returning _account_id $ insert accountTable $ insertExpressions
+  accountIds <- runPgInsertReturningList $ flip (returning @_ @'SExpr) _account_id $ insert accountTable $ insertExpressions
     [ Account
         { _account_id = default_
         , _account_email = lower_ (val_ email)
@@ -71,7 +74,7 @@ login
   -> Text
   -> Pg (Maybe (PrimaryKey Account Identity))
 login accountTable email pass = runMaybeT $ do
-  (aid, mPwHash) <- MaybeT $ fmap listToMaybe $ runSelectReturningList $ select $ do
+  (aid, mPwHash) <- MaybeT $ fmap listToMaybe $ runSelectReturningList $ select @('STuple '[ 'SExpr, 'SExpr ]) $ do
     acc <- all_ accountTable
     guard_ $ lower_ (_account_email acc) ==. lower_ (val_ email)
     pure (_account_id acc, _account_password acc)
@@ -85,7 +88,7 @@ ensureAccountExists
   -> Text
   -> Pg (Bool, PrimaryKey Account Identity)
 ensureAccountExists accountTable email = do
-  existingAccountId <- runSelectReturningOne $ select $ fmap primaryKey $ filter_ (\x ->
+  existingAccountId <- runSelectReturningOne $ select @'STable $ fmap primaryKey $ filter_ (\x ->
     lower_ (_account_email x) ==. lower_ (val_ email)) $ all_ accountTable
   case existingAccountId of
     Just existing -> return (False, existing)

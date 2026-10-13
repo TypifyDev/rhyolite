@@ -6,6 +6,7 @@
 module Data.Vessel.Void where
 
 import Data.Aeson
+import Data.Kind (Type)
 import GHC.Generics
 import Data.Functor.Const
 import Data.Functor.Identity
@@ -14,7 +15,7 @@ import Data.Vessel.Class
 import Reflex.Query.Class
 
 -- | completly empty View.
-data VoidV (v :: * -> *) = VoidV
+data VoidV (v :: Type -> Type) = VoidV
   deriving (Eq, Ord, Show, Generic)
 
 instance FromJSON (VoidV a)

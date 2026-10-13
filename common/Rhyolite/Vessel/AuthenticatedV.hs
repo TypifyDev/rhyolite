@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-| Description: Authenticated views -}
 {-# Language ConstraintKinds #-}
 {-# Language DeriveGeneric #-}
@@ -19,6 +20,7 @@
 module Rhyolite.Vessel.AuthenticatedV where
 
 import Control.Applicative
+import Data.Kind (Type)
 import Control.Monad
 import Data.Aeson
 import Data.Aeson.GADT.TH
@@ -33,7 +35,7 @@ import Data.Vessel
 import Data.Vessel.Vessel
 import Data.Semigroup
 import Data.Semigroup.Commutative
-import Data.Vessel.Path (Keyed(..))
+-- import Data.Vessel.Path (Keyed(..)) -- unused per -Wunused-imports
 import GHC.Generics
 import Reflex.Query.Class
 import Data.Map.Monoidal (MonoidalMap)
@@ -50,11 +52,11 @@ import Rhyolite.App
 import Rhyolite.Vessel.AuthMapV
 import Rhyolite.Vessel.ErrorV
 
-import Control.Applicative (Alternative)
+-- import Control.Applicative (Alternative) -- unused per -Wunused-imports
 import Prelude hiding ((.), id)
 import Control.Category
 import Data.Vessel.ViewMorphism (ViewQueryResult, ViewMorphism(..), ViewHalfMorphism(..))
-import Data.Vessel.Vessel (vessel)
+-- import Data.Vessel.Vessel (vessel) -- unused per -Wunused-imports
 import Data.Bifoldable
 
 -- TODO upstream this instance
@@ -64,7 +66,7 @@ instance (Has' Semigroup k (FlipAp g), GCompare k, Has View k) => DecidablyEmpty
 
 -- | An internal key type used to glue together parts of a view selector
 -- that have different authentication contexts.
-data AuthenticatedVKey public private personal (ix :: (* -> *) -> *) where
+data AuthenticatedVKey public private personal (ix :: (Type -> Type) -> Type) where
   AuthenticatedVKey_Public :: AuthenticatedVKey public private personal public
   AuthenticatedVKey_Private :: AuthenticatedVKey public private personal private
   AuthenticatedVKey_Personal :: AuthenticatedVKey public private personal personal
@@ -141,7 +143,7 @@ instance
   , Semigroup (public (Compose c (VesselLeafWrapper (QueryResult (Vessel (AuthenticatedVKey public private personal) g)))))
   , Semigroup (personal (Compose c (VesselLeafWrapper (QueryResult (Vessel (AuthenticatedVKey public private personal) g)))))
   , Query (Vessel (AuthenticatedVKey public private personal) g)
-  ) => Query (AuthenticatedV public private personal (Compose c (g :: * -> *))) where
+  ) => Query (AuthenticatedV public private personal (Compose c (g :: Type -> Type))) where
   type QueryResult (AuthenticatedV public private personal (Compose c g)) = AuthenticatedV public private personal
          (Compose c (VesselLeafWrapper (QueryResult (Vessel (AuthenticatedVKey public private personal) g))))
   crop (AuthenticatedV s) (AuthenticatedV r) = AuthenticatedV $ crop s r

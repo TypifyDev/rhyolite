@@ -28,16 +28,20 @@ library
     , containers
     , cookie
     , data-default
+    , dependent-sum
+    , effectful-core
     , either
     , exception-transformers
+    , patch
+    , reflex-dom-core-effectful
     , ghcjs-dom
     , jsaddle
     , lens
     , mtl
     , network-uri
-    , obelisk-executable-config-lookup
-    , obelisk-frontend
-    , obelisk-route
+    , jenga-executable-config-lookup
+    , jenga-frontend
+    , jenga-route
     , primitive
     , ref-tf
     , reflex
@@ -53,9 +57,14 @@ library
 
   exposed-modules:
     Rhyolite.Frontend.App
+    Rhyolite.Frontend.App.Effectful
     Rhyolite.Frontend.Cookie
     Rhyolite.Frontend.Auth
     Rhyolite.Frontend.Auth.App
+    Rhyolite.Frontend.Effect.Query
+    Rhyolite.Frontend.Effect.Requester
+    Rhyolite.Frontend.Effect.Widget
+    Rhyolite.Frontend.Effect.WidgetRunner
 
   ghc-options:
     -Wall -fno-warn-unused-do-bind -fwarn-tabs -funbox-strict-fields

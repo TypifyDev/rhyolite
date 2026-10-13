@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-|
 Description:
   A push-pull data pipeline extending from the websocket connection to the database.

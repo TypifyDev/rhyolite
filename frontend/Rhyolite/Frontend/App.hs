@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-| Description: Connect clients to a rhyolite backend
 
 Frontend part of the view/viewselector implementation. Here we have the
@@ -19,6 +20,7 @@ that's used in the frontend module of a typical app.
 {-# Language LambdaCase #-}
 {-# Language OverloadedStrings #-}
 {-# Language PolyKinds #-}
+{-# Language KindSignatures #-}
 {-# Language RankNTypes #-}
 {-# Language RecursiveDo #-}
 {-# Language ScopedTypeVariables #-}
@@ -31,6 +33,9 @@ module Rhyolite.Frontend.App where
 
 import Control.Applicative
 import Control.Monad.Exception
+import Control.Monad.Fix (MonadFix)
+import Data.Kind (Type)
+import Control.Monad (join, (<=<))
 import Control.Monad.Identity
 import Control.Monad.Primitive
 import Control.Monad.Reader
@@ -54,8 +59,8 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Witherable (Filterable)
 import GHC.Generics (Generic)
 import Network.URI (URI, parseURI)
-import Obelisk.Frontend.Cookie
-import Obelisk.Route.Frontend (RouteToUrl(..), Routed(..), SetRoute(..))
+import Jenga.Frontend.Cookie
+import Jenga.Route.FrontendMTL (RouteToUrl(..), Routed(..), SetRoute(..))
 import qualified Reflex as R
 import Reflex.Dom.Core hiding (MonadWidget, Request)
 import Reflex.Host.Class
@@ -64,9 +69,9 @@ import Reflex.Time (throttleBatchWithLag)
 import Rhyolite.Api
 import Rhyolite.WebSocket
 
-import Obelisk.Configs
-import Obelisk.Route
-import Obelisk.Route.Frontend
+import Jenga.Configs.MTL
+import Jenga.Route
+import Jenga.Route.FrontendMTL
 
 #if defined(ghcjs_HOST_OS)
 import GHCJS.DOM.Types (MonadJSM, pFromJSVal)
@@ -124,7 +129,7 @@ type RhyoliteWidgetInternal q r t m = QueryT t q (RequesterT t r Identity m)
 
 -- | A widget that can make requests and issue view selectors
 newtype RhyoliteWidget q r t m a = RhyoliteWidget { unRhyoliteWidget :: RhyoliteWidgetInternal q r t m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadFix, MonadException, HasCookies)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadFix, MonadException)
 
 deriving instance
   ( Group q
@@ -285,6 +290,7 @@ type MonadWidget' t m =
 
 -- | Runs a rhyolite frontend widget that uses obelisk routing. See 'runRhyoliteWidget'.
 runObeliskRhyoliteWidget ::
+  forall qFrontend qWire req m (t :: Type) a backendRoute frontendRoute.
   ( PerformEvent t m
   , TriggerEvent t m
   , PostBuild t m
@@ -315,13 +321,13 @@ runObeliskRhyoliteWidget toWire configRoute enc listenRoute child = do
         Nothing -> error $ T.unpack $ "route config missing: " <> configRoute
         Just Nothing -> error $ T.unpack $ "malformed confing route: " <> configRoute
         Just (Just r) -> r
-  let wsUrl = (T.pack $ show $ websocketUri route) <> (renderBackendRoute enc listenRoute)
+  let wsUrl = (T.pack $ show $ websocketUri route) <> (renderObeliskBackendRoute enc listenRoute)
   lift $ runRhyoliteWidget toWire wsUrl $ flip runRoutedT obR $ child
 
 -- | Runs a rhyolite frontend widget that opens a websocket connection and can
 -- issue requests and queries over that connection.
 runRhyoliteWidget
-   :: forall qFrontend qWire req m t b.
+   :: forall qFrontend qWire req m (t :: Type) b.
       ( PerformEvent t m
       , TriggerEvent t m
       , PostBuild t m

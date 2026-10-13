@@ -60,7 +60,7 @@ let
     (self: super: lib.mapAttrs (name: path: self.callCabal2nix name path {}) overrideSrcs)
     (self: super: {
       frontend = super.frontend.override {
-        obelisk-executable-config-lookup = self.obelisk-executable-config-lookup;
+        jenga-executable-config-lookup = self.jenga-executable-config-lookup;
       };
       gargoyle-postgresql-nix = haskellLib.overrideCabal super.gargoyle-postgresql-nix {
         librarySystemDepends = [ pkgs.postgresql ];

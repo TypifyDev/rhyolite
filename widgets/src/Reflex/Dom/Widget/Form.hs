@@ -18,6 +18,7 @@ module Reflex.Dom.Widget.Form where
 import Control.Lens ((%~), makeLenses, preview)
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.Fix (MonadFix)
 import Data.Bifunctor
 import Data.Functor.Compose
 import Data.Map (Map)

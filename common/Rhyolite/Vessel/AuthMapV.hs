@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-| Description: Authenticated vessel container
 -}
 {-# Language PolyKinds #-}
@@ -5,6 +6,7 @@
 {-# Language DeriveGeneric #-}
 {-# Language DeriveTraversable #-}
 {-# Language TypeApplications #-}
+{-# Language FlexibleContexts #-}
 {-# Language FlexibleInstances #-}
 {-# Language GeneralizedNewtypeDeriving #-}
 {-# Language StandaloneDeriving #-}
@@ -18,7 +20,7 @@ module Rhyolite.Vessel.AuthMapV where
 import Data.Set (Set)
 import Control.Monad.Writer.Strict (runWriterT) -- TODO: not strict enough, use writer-cps
 import Control.Monad.Writer.Class (tell)
-import Control.Monad.Trans.Class (lift)
+-- import Control.Monad.Trans.Class (lift) -- unused per -Wunused-imports
 import Data.These
 import Data.Aeson
 import Data.Constraint.Extras

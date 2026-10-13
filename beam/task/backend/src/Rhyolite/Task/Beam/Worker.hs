@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeApplications #-}
 {-# Language RankNTypes #-}
 {-# Language ScopedTypeVariables #-}
 {-# Language TypeFamilies #-}
@@ -12,12 +14,13 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.Thread.Delay
 import Control.Exception.Lifted (bracket)
-import Control.Monad (forM)
+import Control.Monad (forM, void)
 import Control.Monad.Cont
 import Control.Monad.Trans.Control
 import Data.Time
 
 import Database.Beam
+import Database.Beam.Query.Shape (Shape (..))
 import Database.Beam.Backend.SQL
 import Database.Beam.Postgres
 import Database.Beam.Postgres.Syntax
@@ -77,7 +80,25 @@ taskWorkerWithoutHasRun dbConn table schema k checkoutId = do
     -- 2. Update this task to reflect that it has been checked out by current worker
     -- 3. Run the specified checkout task which returns the work continuation
     withTransactionSerializableRunBeamPostgres dbConn $ do
-      primaryKeyAndInput <- runSelectReturningOne $ select $ limit_ 1 $ do
+      -- beam-914-fork requires an explicit Shape tag on 'select' so the
+      -- projection dispatch class ('DispatchProjectible') can pick the right
+      -- instance under GHC 9.14's stricter apartness check. The projection
+      -- is a pair of two Beamable tables (a PrimaryKey and the user's payload),
+      -- so the shape is @'STuple '[ 'STable, 'STable ]@.
+      -- beam-914-fork's 'select' has type
+      --   forall (shape :: Shape) be db res. ... => Q be db QBaseScope res -> SqlSelect be (QExprToIdentity res)
+      -- 'QExprToIdentity' is non-injective so GHC cannot solve for @res@
+      -- backwards from the outer 'SqlSelect Postgres (PrimaryKey table Identity, payload Identity)'
+      -- expected type. Nail @res@ in the forward direction with a full type
+      -- application (@shape @be @db @res) — the family then reduces trivially.
+      primaryKeyAndInput <- runSelectReturningOne
+        $ select @('STuple '[ 'STable, 'STable ])
+                 @Postgres
+                 @_
+                 @( PrimaryKey table (QExpr Postgres QBaseScope)
+                  , payload      (QExpr Postgres QBaseScope) )
+        $ limit_ @('STuple '[ 'STable, 'STable ]) 1
+        $ do
           task <- all_ table
 
           -- Both task fields should be empty for an unclaimed task
@@ -85,7 +106,6 @@ taskWorkerWithoutHasRun dbConn table schema k checkoutId = do
           guard_ $ isNothing_ (_taskWithoutHasRun_checkedOutBy schema task)
                &&. (_taskWithoutHasRun_filter schema task)
 
-          -- Return the primary key (task id) along with a custom field that the user asked for.
           pure (primaryKey task, _taskWithoutHasRun_payload schema task)
       -- In case we did not find any rows, no update SQL will be run
       -- The row lock that we acquired above will be reset when the transaction ends.

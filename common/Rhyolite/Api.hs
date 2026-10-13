@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-|
 Description: Request/response API protocol
 
@@ -40,6 +42,7 @@ ApiRequest Credentials PublicRequest PrivateRequest
 module Rhyolite.Api where
 
 import Data.Aeson
+import qualified Data.Text as T
 import Data.Constraint.Extras
 import Data.Constraint.Forall
 import Data.Some
@@ -70,12 +73,12 @@ private = ApiRequest_Private
 
 instance (ToJSON cred, ToJSON (public a), ToJSON (private a)) => ToJSON (ApiRequest cred public private a) where
   toJSON = \case
-    ApiRequest_Public x -> toJSON ("public", toJSON x)
-    ApiRequest_Private c x -> toJSON ("private", (toJSON x, toJSON c))
+    ApiRequest_Public x -> toJSON ("public" :: T.Text, toJSON x)
+    ApiRequest_Private c x -> toJSON ("private" :: T.Text, (toJSON x, toJSON c))
 
 instance (FromJSON cred, FromJSON (Some public), FromJSON (Some private)) => FromJSON (Some (ApiRequest cred public private)) where
   parseJSON v = do
-    (tag,rest) <- parseJSON v
+    (tag :: T.Text, rest) <- parseJSON v
     case tag of
       "public" -> do
         Some x <- parseJSON rest

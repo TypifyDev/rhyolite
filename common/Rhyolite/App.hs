@@ -144,7 +144,7 @@ fmapMaybeFst f = mapMaybe $ \(a, c) -> case f a of
 
 -- | A view for a single piece of data, supporting update and delete.
 newtype Single t a = Single { unSingle :: Maybe (Semigroup.First (Maybe t), a) }
-  deriving (Eq, Ord, Show, Foldable, Traversable, Functor, Generic, Typeable)
+  deriving (Eq, Ord, Show, Foldable, Traversable, Functor, Generic)
 
 instance Semigroup a => Semigroup (Single t a) where
   (<>) (Single Nothing) y = y
