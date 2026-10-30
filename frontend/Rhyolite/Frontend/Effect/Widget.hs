@@ -39,7 +39,7 @@ and buy zero additional type-safety.
 Grep evidence: every use of 'RhyoliteWidget' in the working tree
 ('frontend', 'backend', 'common', 'thunks') is either (a) a comment or
 docstring describing the deleted MTL surface, or (b) source inside
-@deps\/jenga\/deps\/rhyolite@ that is being ported away. No consumer in the
+@thunks\/jenga\/deps\/rhyolite@ that is being ported away. No consumer in the
 Effectful codebase treats the wrapper as a distinct type for instance
 dispatch, so there is no semantic reason to keep the newtype-shape. The
 already-ported 'Rhyolite.Frontend.Auth.authenticatedWidgetE' and

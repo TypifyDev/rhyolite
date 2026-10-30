@@ -345,7 +345,7 @@ import           Rhyolite.Frontend.App.Effectful     ( fromNotificationsE
 -- ('Maybe (Identity a)') into a whole-batch decoder
 -- ('Maybe (RequesterData Identity)') and drops the batch entirely if
 -- any single field failed to decode.
-import           Reflex.Requester.Base     (traverseRequesterData)
+import           Reflex.Requester.Base     (Entry(..), Multi, Multi3, RequesterData, traverseRequesterData)
 
 -- Jenga's app-config effect. 'runJengaRhyoliteWidgetE' looks the
 -- WebSocket base URL up here.
@@ -579,21 +579,13 @@ withQueryTE f eff = do
 -- @
 --
 -- Effectful port peels the inner @Requester t req rsp@ effect layer and
--- delegates every 'Requesting' \/ 'Requesting_' call to the outer
--- @Requester t req' rsp'@ member of the effect row, mapping the
--- outbound request 'DMap' (@DMap.map freq@) under the event functor and
--- mapping the inbound response 'DMap' back (@DMap.map frsp@) the same way.
+-- delegates scalar and bundled calls to the outer
+-- @Requester t req' rsp'@ member of the effect row. Payload mappings
+-- preserve the bundle shape and all request tags and cohort keys.
 --
--- Why this is honestly implementable (unlike 'runRequesterTE'): the
--- Effectful 'Requester' effect API — see
--- @Reflex.Host.HeadlessEffectful@ — operates in a caller-provided
--- 'GCompare' 'DMap' currency where the CALLER owns the routing keys.
--- There is no internal 'MyTag' \/ 'MyTagWrap' \/ 'TagMap' \/
--- 'RequesterData' machinery to preserve, so the 'DMap.map' pass-through
--- is a full-fidelity semantic port. Compare 'runRequesterTE', where the
--- MTL sibling MUST produce a 'RequesterData request' whose construction
--- depends on internally-generated tags — that one genuinely can't be
--- lifted without touching reflex internals.
+-- The pinned 'Reflex.Host.HeadlessEffectful' Requester carries scalar
+-- payloads or 'Entry' bundles. 'traverseRequesterData' maps the nested
+-- payloads without allocating tags or changing response routing.
 -- -----------------------------------------------------------------------------
 
 -- | Effectful port of 'Reflex.Requester.Base.withRequesterT'.
@@ -621,9 +613,8 @@ withRequesterTE freq frsp = interpret handler
     -- The handler runs in the ORIGINAL 'es' effect row (that's what
     -- 'interpret' hands us — no reinterpret, no private state), so we
     -- can call 'requesting' / 'requesting_' on the outer Requester
-    -- directly. Both branches share the same shape: map the outbound
-    -- DMap event with 'DMap.map freq' under fmap on the Event functor,
-    -- then delegate.
+    -- directly. Each branch maps outbound payloads, delegates the same
+    -- operation, and maps response payloads back when present.
     -- No ':> localEs' constraints: EffectHandler's polymorphic localEs
     -- only carries 'Requester t req rsp :> localEs' (the effect being
     -- interpreted). Access to the outer 'Requester t req' rsp'' happens
@@ -649,6 +640,28 @@ withRequesterTE freq frsp = interpret handler
       EFRQ.Requesting_ evReq -> do
         let evReq' = fmap freq evReq
         requestingE_ @t @req' @rsp' evReq'
+      EFRQ.RequestingBundled evReq -> do
+        evRsp <- EFRQ.requestingBundledE @t @req' @rsp' (mapRequesterMulti freq <$> evReq)
+        pure (mapRequesterMulti frsp <$> evRsp)
+      EFRQ.RequestingBundled3 evReq -> do
+        evRsp <- EFRQ.requestingBundled3E @t @req' @rsp' (mapRequesterMulti3 freq <$> evReq)
+        pure (mapRequesterMulti3 frsp <$> evRsp)
+
+-- Preserve request tags and cohort keys while translating payloads.
+mapRequesterPayload
+  :: (forall x. req x -> rsp x)
+  -> RequesterData req -> RequesterData rsp
+mapRequesterPayload f = runIdentity . traverseRequesterData (Identity . f)
+
+mapRequesterMulti
+  :: (forall x. req x -> rsp x)
+  -> Entry req Multi -> Entry rsp Multi
+mapRequesterMulti f (Entry batches) = Entry (fmap (mapRequesterPayload f) batches)
+
+mapRequesterMulti3
+  :: (forall x. req x -> rsp x)
+  -> Entry req Multi3 -> Entry rsp Multi3
+mapRequesterMulti3 f (Entry batches) = Entry (fmap (fmap (mapRequesterPayload f)) batches)
 
 -- -----------------------------------------------------------------------------
 -- 'mapAuthE'

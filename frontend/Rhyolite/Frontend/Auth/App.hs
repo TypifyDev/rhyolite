@@ -13,6 +13,8 @@ import Rhyolite.Vessel.App as X
 import Data.Functor.Const (Const)
 import Data.Functor.Identity (Identity)
 import Reflex.Class (Reflex)
+import Reflex.PostBuild.Class (PostBuild)
+import Control.Monad.Fix (MonadFix)
 import Reflex.Query.Class (SelectedCount)
 
 import Rhyolite.Api (ApiRequest)
@@ -22,31 +24,29 @@ import Rhyolite.Vessel.Types (FullV, FullAuthErrorV)
 import           Effectful (Eff, (:>))
 import qualified Reflex.Host.HeadlessEffectful as EFQ
 import qualified Reflex.Host.HeadlessEffectful as EFRQ
-import qualified Reflex.Class as Core
 
--- | Re-introduced MTL alias for consumers that use 'FullAppWidget'.
--- Mirrors the old MTL definition; delegates to 'Base.FullWidget'.
+-- | MTL widget with public and authenticated requests and queries.
 type FullAppWidget app =
   Base.FullWidget (AuthCredential app) (PublicApi app) (PrivateApi app) (PublicV app) (PrivateV app) (PersonalV app)
 
--- | Re-introduced MTL alias for consumers that use 'AuthErrorAppWidget'.
+-- | MTL widget whose queries may return authentication errors.
 type AuthErrorAppWidget app =
   Base.AuthErrorWidget (AuthCredential app) (PublicApi app) (PrivateApi app) (PublicV app) (PrivateV app) (PersonalV app)
 
--- | Re-introduced MTL alias for consumers that use 'AuthAppWidget'.
+-- | MTL widget after authentication errors have been handled.
 type AuthAppWidget app =
   Base.AuthWidget (AuthCredential app) (PublicApi app) (PrivateApi app) (PublicV app) (PrivateV app) (PersonalV app)
 
 
--- =============================================================================
--- Effectful port. The MTL 'authenticatedWidget' has been deleted along
--- with 'Base.authenticatedWidget'; only the Effectful port survives.
---
--- 'authenticatedWidgetE' delegates directly to 'Base.authenticatedWidgetE'
--- and ignores the 'proxy app' argument. The 'proxy app' argument is kept
--- for API-symmetry (call sites that use @Just Proxy@ / @Just \@app@ style
--- don't need to change to switch to the Effectful widget).
--- =============================================================================
+-- | Specialize an MTL child widget to an authentication token.
+-- See 'authenticatedWidgetE' for the Effectful counterpart.
+authenticatedWidget
+  :: (MonadFix m, PostBuild t m, RhyoliteAuthApp app)
+  => proxy app
+  -> AuthCredential app
+  -> AuthErrorAppWidget app t m a
+  -> FullAppWidget app t m a
+authenticatedWidget _ = Base.authenticatedWidget
 
 -- | Effectful port of 'authenticatedWidget'. Delegates to
 -- 'Base.authenticatedWidgetE'. Same shape as the MTL sibling: the
@@ -89,5 +89,3 @@ authenticatedWidgetE _ =
     @(PublicV app)
     @(PrivateV app)
     @(PersonalV app)
-
-
