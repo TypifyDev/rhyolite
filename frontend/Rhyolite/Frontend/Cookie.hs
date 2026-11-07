@@ -111,6 +111,7 @@ setPermanentCookieWithLocation doc loc key mv = do
 data GetCookieFailed
   = GetCookieFailed_NotFound
   | GetCookieFailed_Base64DecodeFailed String
+  deriving (Show)
 
 -- | Retrieve the value of the given cookie
 getCookie :: MonadJSM m => DOM.Document -> Text -> m (Either GetCookieFailed Text)
