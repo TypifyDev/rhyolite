@@ -49,22 +49,18 @@ import Data.Coerce (coerce)
 import Data.Constraint.Extras
 import Data.Default (Default)
 import qualified Data.Map as Map
-import Data.Semigroup ((<>))
 import Data.Semigroup.Commutative
 import Data.Some
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Encoding (decodeUtf8)
-import Data.Witherable (Filterable)
+import Witherable (Filterable)
 import GHC.Generics (Generic)
 import Network.URI (URI, parseURI)
-import Jenga.Frontend.Cookie
-import Jenga.Route.FrontendMTL (RouteToUrl(..), Routed(..), SetRoute(..))
 import qualified Reflex as R
 import Reflex.Dom.Core hiding (MonadWidget, Request)
 import Reflex.Host.Class
-import Reflex.Time (throttleBatchWithLag)
 
 import Rhyolite.Api
 import Rhyolite.WebSocket
@@ -384,7 +380,7 @@ runRhyoliteWidget toWire url child = do
 
 -- | Receive the results of a 'Query' as a stream of 'Event's and combine them
 -- into a 'Dynamic' 'QueryResult'
-fromNotifications :: forall m (t :: *) q.
+fromNotifications :: forall m (t :: Type) q.
   ( Query q
   , MonadHold t m
   , PerformEvent t m
@@ -500,7 +496,7 @@ watchViewSelector = queryDynUniq
 
 -- | watch a viewselector defined with a ViewMorphism
 watchView
-  :: forall q partial (a :: *) m t.
+  :: forall q partial (a :: Type) m t.
   ( QueryResult q ~ ViewQueryResult q
   , MonadQuery t q m
   , Reflex t

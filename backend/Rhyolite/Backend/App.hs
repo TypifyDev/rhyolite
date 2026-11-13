@@ -54,14 +54,13 @@ import Data.Map.Monoidal (MonoidalMap)
 import qualified Data.Map.Monoidal as Map
 import Data.MonoidMap (MonoidMap(..), monoidMap)
 import Data.Pool (Pool)
-import Data.Semigroup ((<>), Semigroup)
 import Data.Semigroup.Commutative
 import Data.Some (Some(Some))
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Data.Typeable (Typeable)
 import Data.Vessel
-import Data.Witherable (Filterable(..))
+import Witherable (Filterable(..))
 import qualified Database.PostgreSQL.Simple as Pg
 import Debug.Trace (trace)
 import qualified Network.WebSockets as WS
